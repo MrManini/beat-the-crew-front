@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from "react"
 import { useVotesUpdated } from "@/lib/socket-context"
 import {
+  createEvent,
   getEvent,
   getBracket,
   getVoteTally,
+  addContestants,
   openVoting,
   closeVoting,
   announceResult,
@@ -17,31 +19,32 @@ import { VotingControl } from "./voting-control"
 import { RealTimeResults } from "./real-time-results"
 import { ScreenControl } from "./screen-control"
 import { BracketControl } from "./bracket-control"
+import { EventSetup } from "./event-setup"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
-
-const EVENT_ID = parseInt(process.env.NEXT_PUBLIC_EVENT_ID || "1")
 
 interface AdminDashboardProps {
   onLogout: () => void
 }
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+  const [eventId, setEventId] = useState<number | null>(null)
   const [event, setEvent] = useState<Event | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<ContestantGroup>(ContestantGroup.CREW)
   const [battles, setBattles] = useState<Battle[]>([])
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null)
   const [tally, setTally] = useState<VoteTally>({ yellowVotes: 0, purpleVotes: 0, votingOpen: false })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Load event data
-  const loadData = useCallback(async () => {
+  const loadEventData = useCallback(async (id: number) => {
     try {
+      setIsLoading(true)
       setError(null)
       const [eventData, bracketData] = await Promise.all([
-        getEvent(EVENT_ID),
-        getBracket(EVENT_ID, selectedGroup).catch(() => []),
+        getEvent(id),
+        getBracket(id, selectedGroup).catch(() => []),
       ])
       setEvent(eventData)
       setBattles(bracketData)
@@ -55,16 +58,44 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         setTally(tallyData)
       }
     } catch (err) {
-      console.log("[v0] Failed to load admin data:", err)
-      setError("Failed to load data. Make sure the backend is running.")
+      console.error("Failed to load event data:", err)
+      setError("Failed to load event. Make sure the backend is running.")
     } finally {
       setIsLoading(false)
     }
   }, [selectedGroup])
 
+  // Reload when selectedGroup changes
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (eventId) {
+      loadEventData(eventId)
+    }
+  }, [eventId, selectedGroup, loadEventData])
+
+  // Handle creating a new event
+  const handleCreateEvent = async (eventName: string) => {
+    try {
+      setError(null)
+      const newEvent = await createEvent(eventName)
+      setEventId(newEvent.id)
+      setEvent(newEvent)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create event")
+    }
+  }
+
+  // Handle adding contestants
+  const handleAddContestants = async (names: string[], group: ContestantGroup) => {
+    if (!eventId) return
+    try {
+      setError(null)
+      await addContestants(eventId, names, group)
+      // Reload event data to reflect new contestants
+      await loadEventData(eventId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add contestants")
+    }
+  }
 
   // Handle real-time vote updates
   const handleVotesUpdated = useCallback((payload: { battleId: number; yellowVotes: number; purpleVotes: number }) => {
@@ -83,59 +114,63 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const handleOpenVoting = async (battleId: number) => {
     try {
       await openVoting(battleId)
-      await loadData()
+      if (eventId) await loadEventData(eventId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to open voting")
     }
   }
 
   const handleCloseVoting = async () => {
-    if (!activeBattle) return
+    if (!activeBattle || !eventId) return
     try {
       await closeVoting(activeBattle.id)
-      await loadData()
+      await loadEventData(eventId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to close voting")
     }
   }
 
   const handleAnnounceResult = async () => {
-    if (!activeBattle) return
+    if (!activeBattle || !eventId) return
     try {
       await announceResult(activeBattle.id)
-      await loadData()
+      await loadEventData(eventId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to announce result")
     }
   }
 
   const handleRerun = async () => {
-    if (!activeBattle) return
+    if (!activeBattle || !eventId) return
     try {
       await rerunBattle(activeBattle.id)
-      await loadData()
+      await loadEventData(eventId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rerun battle")
     }
   }
 
   const handleForfeit = async (side: "yellow" | "purple") => {
-    if (!activeBattle) return
+    if (!activeBattle || !eventId) return
     try {
       await forfeitBattle(activeBattle.id, side)
-      await loadData()
+      await loadEventData(eventId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to forfeit battle")
     }
   }
 
-  const handleSelectWinner = async (battleId: number) => {
-    // This is called when clicking a winner in the bracket control
-    // It will open voting for that battle
-    await handleOpenVoting(battleId)
+  // Show event setup screen if no event selected
+  if (!eventId) {
+    return (
+      <EventSetup
+        onCreateEvent={handleCreateEvent}
+        onLogout={onLogout}
+      />
+    )
   }
 
-  if (isLoading) {
+  if (isLoading && !event) {
     return (
       <div className="min-h-screen bg-btc-dark flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-btc-yellow border-t-transparent rounded-full animate-spin" />
@@ -156,9 +191,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       <div className="relative z-10 max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-black text-btc-purple uppercase tracking-wider">
-            Panel de Control
-          </h1>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-btc-purple uppercase tracking-wider">
+              Panel de Control
+            </h1>
+            {event && <p className="text-sm text-muted-foreground mt-1">{event.name}</p>}
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -178,31 +216,35 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         )}
 
         {/* Voting Control */}
-        <VotingControl
-          activeBattle={activeBattle}
-          tally={tally}
-          onOpenVoting={handleOpenVoting}
-          onCloseVoting={handleCloseVoting}
-          onAnnounceResult={handleAnnounceResult}
-          onRerun={handleRerun}
-          onForfeit={handleForfeit}
-        />
+        {event && (
+          <>
+            <VotingControl
+              activeBattle={activeBattle}
+              tally={tally}
+              onOpenVoting={handleOpenVoting}
+              onCloseVoting={handleCloseVoting}
+              onAnnounceResult={handleAnnounceResult}
+              onRerun={handleRerun}
+              onForfeit={handleForfeit}
+            />
 
-        {/* Real-time Results */}
-        <RealTimeResults tally={tally} activeBattle={activeBattle} />
+            {/* Real-time Results */}
+            <RealTimeResults tally={tally} activeBattle={activeBattle} />
 
-        {/* Screen Control */}
-        <ScreenControl />
+            {/* Screen Control */}
+            <ScreenControl />
 
-        {/* Bracket Control */}
-        <BracketControl
-          battles={battles}
-          selectedGroup={selectedGroup}
-          onGroupChange={setSelectedGroup}
-          onSelectBattle={handleSelectWinner}
-          activeBattleId={activeBattle?.id || null}
-          onRefresh={loadData}
-        />
+            {/* Bracket Control */}
+            <BracketControl
+              battles={battles}
+              selectedGroup={selectedGroup}
+              onGroupChange={setSelectedGroup}
+              onSelectBattle={handleOpenVoting}
+              activeBattleId={activeBattle?.id || null}
+              onRefresh={() => eventId && loadEventData(eventId)}
+            />
+          </>
+        )}
       </div>
     </div>
   )

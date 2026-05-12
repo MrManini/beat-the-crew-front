@@ -2,19 +2,24 @@
 
 import { useState } from "react"
 import { ContestantGroup } from "@/lib/types"
+import { ContestantsSetup } from "./contestants-setup"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LogOut } from "lucide-react"
+import Image from "next/image"
 
 interface EventSetupProps {
-  onCreateEvent: (eventName: string) => Promise<void>
+  onCreateEvent: (eventName: string) => Promise<number>
   onLogout: () => void
+  onComplete: (eventId: number) => void
 }
 
-export function EventSetup({ onCreateEvent, onLogout }: EventSetupProps) {
+export function EventSetup({ onCreateEvent, onLogout, onComplete }: EventSetupProps) {
+  const [step, setStep] = useState<"create" | "contestants">("create")
   const [eventName, setEventName] = useState("")
+  const [eventId, setEventId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,12 +32,28 @@ export function EventSetup({ onCreateEvent, onLogout }: EventSetupProps) {
     try {
       setIsLoading(true)
       setError(null)
-      await onCreateEvent(eventName)
+      const id = await onCreateEvent(eventName)
+      setEventId(id)
+      setStep("contestants")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create event")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (step === "contestants" && eventId) {
+    return (
+      <ContestantsSetup
+        eventName={eventName}
+        eventId={eventId}
+        onComplete={() => onComplete(eventId)}
+        onBack={() => {
+          setStep("create")
+          setError(null)
+        }}
+      />
+    )
   }
 
   return (
@@ -47,7 +68,16 @@ export function EventSetup({ onCreateEvent, onLogout }: EventSetupProps) {
 
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-black text-btc-purple uppercase tracking-wider">Beat The Crew</h1>
+          <div className="flex justify-center">
+            <Image
+              src="/images/logo.svg"
+              alt="Beat The Crew"
+              width={240}
+              height={102}
+              className="w-60 h-auto"
+              priority
+            />
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -61,8 +91,8 @@ export function EventSetup({ onCreateEvent, onLogout }: EventSetupProps) {
 
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-btc-purple">Create New Event</CardTitle>
-            <CardDescription>Start by creating a new event for the competition</CardDescription>
+            <CardTitle className="text-btc-purple">Crear Nuevo Evento</CardTitle>
+            <CardDescription>Comienza creando un nuevo evento para la competencia</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {error && (
@@ -72,7 +102,7 @@ export function EventSetup({ onCreateEvent, onLogout }: EventSetupProps) {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="event-name">Event Name</Label>
+              <Label htmlFor="event-name">Nombre del Evento</Label>
               <Input
                 id="event-name"
                 placeholder="Beat the Crew 2026"

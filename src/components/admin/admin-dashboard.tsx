@@ -28,7 +28,11 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
-  const [eventId, setEventId] = useState<number | null>(null)
+  const [eventId, setEventId] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null
+    const stored = localStorage.getItem('btc_event_id')
+    return stored ? Number(stored) : null
+  })
   const [event, setEvent] = useState<Event | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<ContestantGroup>(ContestantGroup.CREW)
   const [battles, setBattles] = useState<Battle[]>([])
@@ -77,11 +81,16 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     try {
       setError(null)
       const newEvent = await createEvent(eventName)
-      setEventId(newEvent.id)
-      setEvent(newEvent)
+      return newEvent.id
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create event")
+      throw err
     }
+  }
+
+  const handleSetEventId = (id: number) => {
+    localStorage.setItem('btc_event_id', String(id))
+    setEventId(id)
   }
 
   // Handle adding contestants
@@ -94,6 +103,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       await loadEventData(eventId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add contestants")
+      throw err
     }
   }
 
@@ -166,6 +176,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       <EventSetup
         onCreateEvent={handleCreateEvent}
         onLogout={onLogout}
+        onComplete={(id: number) => {
+          handleSetEventId(id)
+        }}
       />
     )
   }

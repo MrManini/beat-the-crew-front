@@ -15,4 +15,4 @@ node_modules
 .next/
 .DS_Store
 
-next.config.mjs
+next-env.d.ts

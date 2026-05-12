@@ -1,11 +1,14 @@
 "use client"
 
+import { useState } from "react"
 import { ContestantGroup, type Battle } from "@/lib/types"
+import { generateBracket, reshuffleBracket } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Shuffle } from "lucide-react"
 
 interface BracketControlProps {
+  eventId: number | null
   battles: Battle[]
   selectedGroup: ContestantGroup
   onGroupChange: (group: ContestantGroup) => void
@@ -109,6 +112,7 @@ function BattleRow({ battle, index, roundName, isActive, onSelect }: BattleRowPr
 }
 
 export function BracketControl({
+  eventId,
   battles,
   selectedGroup,
   onGroupChange,
@@ -116,6 +120,37 @@ export function BracketControl({
   activeBattleId,
   onRefresh,
 }: BracketControlProps) {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isReshuffling, setIsReshuffling] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleGenerateBracket = async () => {
+    if (!eventId) return
+    try {
+      setIsGenerating(true)
+      setError(null)
+      await generateBracket(eventId, selectedGroup)
+      onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate bracket")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleReshuffleBracket = async () => {
+    if (!eventId) return
+    try {
+      setIsReshuffling(true)
+      setError(null)
+      await reshuffleBracket(eventId, selectedGroup)
+      onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reshuffle bracket")
+    } finally {
+      setIsReshuffling(false)
+    }
+  }
   // Organize battles by round
   const battlesByRound = new Map<number, Battle[]>()
   battles.forEach((battle) => {
@@ -139,13 +174,36 @@ export function BracketControl({
           Control del Bracket
         </CardTitle>
         <div className="flex items-center gap-2">
+          {/* Generate/Reshuffle buttons */}
+          {battles.length === 0 ? (
+            <Button
+              onClick={handleGenerateBracket}
+              disabled={isGenerating}
+              size="sm"
+              className="bg-btc-purple text-btc-dark hover:bg-btc-purple-light text-xs"
+            >
+              {isGenerating ? "Generando..." : "Generar Bracket"}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleReshuffleBracket}
+              disabled={isReshuffling}
+              size="sm"
+              variant="outline"
+              className="border-btc-purple text-btc-purple hover:text-btc-yellow hover:bg-btc-purple text-xs"
+            >
+              <Shuffle className="w-3 h-3 mr-1" />
+              {isReshuffling ? "Reorganizando..." : "Regenerar"}
+            </Button>
+          )}
+          
           {/* Group tabs */}
           <div className="flex rounded-lg overflow-hidden border border-border">
             <button
               onClick={() => onGroupChange(ContestantGroup.CREW)}
               className={`px-3 py-1 text-xs uppercase ${
                 selectedGroup === ContestantGroup.CREW
-                  ? "bg-btc-yellow text-btc-dark"
+                  ? "bg-btc-purple text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -155,7 +213,7 @@ export function BracketControl({
               onClick={() => onGroupChange(ContestantGroup.INVITED)}
               className={`px-3 py-1 text-xs uppercase ${
                 selectedGroup === ContestantGroup.INVITED
-                  ? "bg-btc-purple text-foreground"
+                  ? "bg-btc-yellow text-btc-dark"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -173,6 +231,13 @@ export function BracketControl({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Error display */}
+        {error && (
+          <div className="bg-destructive/20 border border-destructive text-destructive-foreground p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Round label */}
         {firstRoundBattles.length > 0 && (
           <p className="text-xs text-muted-foreground uppercase tracking-wider">

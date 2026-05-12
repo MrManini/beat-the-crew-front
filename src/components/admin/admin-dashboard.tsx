@@ -64,6 +64,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     } catch (err) {
       console.error("Failed to load event data:", err)
       setError("Failed to load event. Make sure the backend is running.")
+      localStorage.removeItem('btc_event_id')
+      setEventId(null)
     } finally {
       setIsLoading(false)
     }
@@ -249,6 +251,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
             {/* Bracket Control */}
             <BracketControl
+              eventId={eventId}
               battles={battles}
               selectedGroup={selectedGroup}
               onGroupChange={setSelectedGroup}

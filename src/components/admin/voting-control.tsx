@@ -23,7 +23,8 @@ export function VotingControl({
 }: VotingControlProps) {
   const yellowName = activeBattle?.yellowContestant?.name || "Amarillo"
   const purpleName = activeBattle?.purpleContestant?.name || "Morado"
-  const isVotingOpen = tally.votingOpen
+  const isVotingOpen = activeBattle?.votingOpen ?? false
+  const hasWinner = !!activeBattle?.winnerId
 
   return (
     <Card className="bg-btc-dark-lighter border-border">
@@ -48,8 +49,12 @@ export function VotingControl({
           </Button>
           <Button
             onClick={onAnnounceResult}
-            disabled={isVotingOpen || !activeBattle}
-            className="flex-1 bg-muted text-foreground hover:bg-muted/80 disabled:opacity-50"
+            disabled={isVotingOpen || !activeBattle || hasWinner}
+            className={`flex-1 ${
+              !isVotingOpen && activeBattle && !hasWinner
+                ? "bg-btc-purple text-foreground hover:bg-btc-purple-light"
+                : "bg-muted text-muted-foreground"
+            }`}
           >
             Anunciar Resultado
           </Button>
@@ -77,7 +82,7 @@ export function VotingControl({
         )}
 
         {/* Rerun button (for ties) */}
-        {activeBattle && !isVotingOpen && !activeBattle.winnerId && (
+        {activeBattle && !isVotingOpen && !hasWinner && (
           <Button
             onClick={onRerun}
             variant="outline"

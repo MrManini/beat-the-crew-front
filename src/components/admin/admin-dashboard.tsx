@@ -22,6 +22,7 @@ import { BracketControl } from "./bracket-control"
 import { EventSetup } from "./event-setup"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
+import { useVotingTick } from "@/lib/socket-context"
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -95,20 +96,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setEventId(id)
   }
 
-  // Handle adding contestants
-  const handleAddContestants = async (names: string[], group: ContestantGroup) => {
-    if (!eventId) return
-    try {
-      setError(null)
-      await addContestants(eventId, names, group)
-      // Reload event data to reflect new contestants
-      await loadEventData(eventId)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add contestants")
-      throw err
-    }
-  }
-
   // Handle real-time vote updates
   const handleVotesUpdated = useCallback((payload: { battleId: number; yellowVotes: number; purpleVotes: number }) => {
     if (activeBattle?.id === payload.battleId) {
@@ -120,7 +107,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   }, [activeBattle?.id])
 
+  const handleVotingTick = useCallback((payload: { battleId: number; secondsLeft: number }) => {
+    if (payload.secondsLeft <= 0 && eventId) {
+      loadEventData(eventId)
+    }
+  }, [eventId, loadEventData])
+
   useVotesUpdated(handleVotesUpdated)
+  useVotingTick(handleVotingTick)
 
   // Battle control handlers
   const handleOpenVoting = async (battleId: number) => {

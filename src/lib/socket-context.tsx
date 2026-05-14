@@ -172,6 +172,19 @@ export function useScreenGroupCommand(callback: (group: string) => void) {
   }, [socket, callback])
 }
 
+export function useVotingTick(callback: (payload: { battleId: number; secondsLeft: number }) => void) {
+  const { socket } = useSocket()
+
+  useEffect(() => {
+    if (!socket) return
+
+    socket.on("voting:tick", callback)
+    return () => {
+      socket.off("voting:tick", callback)
+    }
+  }, [socket, callback])
+}
+
 // Helper function to emit screen commands
 export function emitScreenCommand(socket: Socket | null, command: string) {
   if (socket) {

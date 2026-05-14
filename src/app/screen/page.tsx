@@ -1,23 +1,26 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { SocketProvider, useVotingOpened, useBattleWinner, useBattleTie, useBattleRerun, useBattleForfeit, useSocket, useScreenCommand, useScreenGroupCommand } from "@/lib/socket-context"
+import { SocketProvider, useVotingOpened, useBattleWinner, useBattleTie, useBattleRerun, useBattleForfeit, useSocket, useScreenCommand, useScreenGroupCommand, useVotingTick } from "@/lib/socket-context"
 import { getBracket, getActiveBattle, getEvent } from "@/lib/api"
-import { ContestantGroup, type Battle, type Event } from "@/lib/types"
+import { ContestantGroup, VotingOpenedPayload, type Battle, type Event } from "@/lib/types"
 import { BracketView } from "@/components/screen/bracket-view"
 import { LogoView } from "@/components/screen/logo-view"
 import { WinnerReveal } from "@/components/screen/winner-reveal"
 import { TieReveal } from "@/components/screen/tie-reveal"
+import { VotingTimer } from "@/components/screen/voting-timer"
 
 const EVENT_ID = parseInt(process.env.NEXT_PUBLIC_EVENT_ID || "1")
 
-type ScreenMode = "logo" | "bracket" | "winner" | "tie"
+type ScreenMode = "logo" | "bracket" | "winner" | "tie" | "timer"
 
 interface ScreenState {
   mode: ScreenMode
   group: ContestantGroup
   battles: Battle[]
   event: Event | null
+  currentYellow?: string,
+  currentPurple?: string,
   winnerData?: {
     battleId: number
     winnerId: number
@@ -38,6 +41,7 @@ function ScreenApp() {
   const [currentMode, setCurrentMode] = useState<ScreenMode>('logo')
   const [prevMode, setPrevMode] = useState<ScreenMode | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
 
   const switchMode = useCallback((newMode: ScreenMode) => {
     if (newMode === currentMode || isTransitioning) return
@@ -54,7 +58,6 @@ function ScreenApp() {
       setIsTransitioning(false)
     }, 600)
   }, [currentMode, isTransitioning])
-
 
   // Load event and bracket data
   const loadData = useCallback(async () => {
@@ -74,11 +77,24 @@ function ScreenApp() {
   }, [loadData])
 
   // Socket event handlers
-  const handleVotingOpened = useCallback(() => {
+  const handleVotingTick = useCallback((data: { battleId: number; secondsLeft: number }) => {
+    setSecondsLeft(data.secondsLeft)
+  }, [])
+
+  const handleVotingOpened = useCallback((data: VotingOpenedPayload) => {
+    setState((prev) => ({
+      ...prev,
+      currentYellow: data.yellow,
+      currentPurple: data.purple,
+    }))
+    console.log(data, state.currentYellow, state.currentPurple)
+    setSecondsLeft(60)
+    switchMode("timer")
     loadData()
-  }, [loadData])
+  }, [loadData, switchMode])
 
   const handleBattleWinner = useCallback((payload: { battleId: number; winnerId: number; winnerName: string; yellowVotes: number; purpleVotes: number }) => {
+    setSecondsLeft(null)
     setState((prev) => ({ ...prev, winnerData: payload }))
     switchMode("winner")
 
@@ -90,6 +106,7 @@ function ScreenApp() {
   }, [loadData, switchMode])
 
   const handleBattleTie = useCallback((payload: { battleId: number }) => {
+    setSecondsLeft(null)
     setState((prev) => ({ ...prev, mode: "tie" }))
     switchMode("tie")
     setTimeout(() => {
@@ -107,6 +124,7 @@ function ScreenApp() {
     loadData()
   }, [loadData])
 
+  useVotingTick(handleVotingTick)
   useVotingOpened(handleVotingOpened)
   useBattleWinner(handleBattleWinner)
   useBattleTie(handleBattleTie)
@@ -154,7 +172,7 @@ function ScreenApp() {
       
       {/* Base content */}
       <div className="absolute inset-0">
-        <ModeContent mode={currentMode} state={state} />
+        <ModeContent mode={currentMode} state={state} secondsLeft={secondsLeft} />
       </div>
 
       {/* Wipe overlay - purple and yellow stripes */}
@@ -173,12 +191,17 @@ function ScreenApp() {
   )
 }
 
-function ModeContent({ mode, state }: { mode: ScreenMode, state: ScreenState }) {
+function ModeContent({ mode, state, secondsLeft }: { mode: ScreenMode, state: ScreenState, secondsLeft: number | null }) {
   switch (mode) {
     case 'logo':    return <LogoView eventName={state.event?.name} />
     case 'bracket': return <BracketView battles={state.battles} group={state.group} />
     case 'winner':  return state.winnerData ? <WinnerReveal {...state.winnerData} /> : null
     case 'tie':     return <TieReveal />
+    case 'timer':   return <VotingTimer
+        secondsLeft={secondsLeft ?? 60}
+        yellow={state.currentYellow ?? ''}
+        purple={state.currentPurple ?? ''}
+      />
   }
 }
 

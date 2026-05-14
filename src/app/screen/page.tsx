@@ -88,7 +88,7 @@ function ScreenApp() {
       currentPurple: data.purple,
     }))
     console.log(data, state.currentYellow, state.currentPurple)
-    setSecondsLeft(60)
+    setSecondsLeft(30)
     switchMode("timer")
     loadData()
   }, [loadData, switchMode])
@@ -98,11 +98,11 @@ function ScreenApp() {
     setState((prev) => ({ ...prev, winnerData: payload }))
     switchMode("winner")
 
-    setTimeout(() => {
+/*     setTimeout(() => {
       loadData()
       switchMode("bracket")
       setState((prev) => ({ ...prev, winnerData: undefined }))
-    }, 8000)
+    }, 8000) */
   }, [loadData, switchMode])
 
   const handleBattleTie = useCallback((payload: { battleId: number }) => {

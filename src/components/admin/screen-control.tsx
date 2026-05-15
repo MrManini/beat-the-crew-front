@@ -5,17 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState } from "react"
 import { useSocket, emitScreenCommand, emitScreenGroup } from "@/lib/socket-context"
 
-export function ScreenControl() {
+interface ScreenControlProps {
+  eventId: number
+}
+
+export function ScreenControl({ eventId }: ScreenControlProps) {
   const [displayMode, setDisplayMode] = useState<"logo" | "bracket_crew" | "bracket_invited">("logo")
   const { socket } = useSocket()
 
-  const sendCommand = (command: string) => {
-    emitScreenCommand(socket, command)
-  }
+  const screenUrl = `${window.location.origin}/screen?eventId=${eventId}`
 
-  const sendGroupCommand = (group: string) => {
-    emitScreenGroup(socket, group)
-  }
+  const sendCommand = (command: string) => emitScreenCommand(socket, command)
+  const sendGroupCommand = (group: string) => emitScreenGroup(socket, group)
+  
 
   const handleShowLogo = () => {
     setDisplayMode("logo")
@@ -42,6 +44,27 @@ export function ScreenControl() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Screen URL */}
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={screenUrl}
+            className="flex-1 bg-input border border-border rounded px-3 py-2 text-xs text-muted-foreground font-mono"
+          />
+          <Button
+            onClick={() => window.open(screenUrl, '_blank')}
+            className="bg-btc-dark border border-border text-muted-foreground hover:text-foreground text-xs px-3"
+          >
+            Abrir
+          </Button>
+          <Button
+            onClick={() => navigator.clipboard.writeText(screenUrl)}
+            className="bg-btc-dark border border-border text-muted-foreground hover:text-foreground text-xs px-3"
+          >
+            Copiar
+          </Button>
+        </div>
+
         {/* Display mode buttons */}
         <div className="flex gap-2">
           <Button

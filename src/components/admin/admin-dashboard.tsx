@@ -259,7 +259,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <RealTimeResults tally={tally} activeBattle={activeBattle} />
 
             {/* Screen Control */}
-            <ScreenControl />
+            <ScreenControl eventId={eventId} />
 
             {/* Bracket Control */}
             <BracketControl

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { SocketProvider, useVotingOpened, useBattleWinner, useBattleTie, useBattleRerun, useBattleForfeit, useSocket } from "@/lib/socket-context"
-import { getActiveBattle, castVote } from "@/lib/api"
+import { getCurrentBattle, castVote } from "@/lib/api"
 import { VoteChoice, type Battle, type AppState, ContestantGroup } from "@/lib/types"
 import { WaitingState } from "@/components/voter/waiting-state"
 import { VotingState } from "@/components/voter/voting-state"
@@ -11,7 +11,7 @@ import { VotedState } from "@/components/voter/voted-state"
 import { WinnerState } from "@/components/voter/winner-state"
 import { TieState } from "@/components/voter/tie-state"
 import { ForfeitState } from "@/components/voter/forfeit-state"
-import { useSearchParams } from "next/navigation"
+import { useScreenCommand } from "@/lib/socket-context"
 
 function VoterApp() {
   const [appState, setAppState] = useState<AppState>({ status: "waiting" })
@@ -19,8 +19,6 @@ function VoterApp() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { isConnected } = useSocket()
-  const searchParams = useSearchParams()
-  const eventId = parseInt(searchParams.get('eventId') || '0')
 
   // Initialize user ID from localStorage
   useEffect(() => {
@@ -36,25 +34,19 @@ function VoterApp() {
   useEffect(() => {
     async function checkActiveBattle() {
       try {
-        const battle = await getActiveBattle(eventId)
+        const battle = await getCurrentBattle()  // ← new endpoint
         if (battle && battle.votingOpen) {
-          // Check if user already voted in this battle
           const votedBattles = JSON.parse(localStorage.getItem("btc_voted_battles") || "{}")
           if (votedBattles[battle.id]) {
-            setAppState({
-              status: "voted",
-              battle,
-              choice: votedBattles[battle.id] as VoteChoice,
-            })
+            setAppState({ status: "voted", battle, choice: votedBattles[battle.id] as VoteChoice })
           } else {
             setAppState({ status: "voting", battle })
           }
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     }
     checkActiveBattle()
-  }, [eventId])
+  }, [])
 
   // Socket event handlers
   const handleVotingOpened = useCallback((payload: { battleId: number; yellow: { id: number; name: string }; purple: { id: number; name: string } }) => {
@@ -62,12 +54,12 @@ function VoterApp() {
       id: payload.battleId,
       round: 0,
       position: 0,
-      eventId: eventId,
+      eventId: 0,
       group: "CREW" as ContestantGroup,
       yellowContestantId: payload.yellow.id,
       purpleContestantId: payload.purple.id,
-      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: eventId },
-      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: eventId },
+      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: 0 },
+      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: 0 },
       winnerId: null,
       winner: null,
       votingOpen: true,
@@ -123,12 +115,12 @@ function VoterApp() {
       id: payload.battleId,
       round: 0,
       position: 0,
-      eventId: eventId,
+      eventId: 0,
       group: "CREW" as ContestantGroup,
       yellowContestantId: payload.yellow.id,
       purpleContestantId: payload.purple.id,
-      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: eventId },
-      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: eventId },
+      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: 0 },
+      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: 0 },
       winnerId: null,
       winner: null,
       votingOpen: true,
@@ -151,6 +143,13 @@ function VoterApp() {
     })
   }, [])
 
+  const handleScreenCommand = useCallback((command: string) => {
+    if (command === "show_logo") {
+      setAppState({ status: "waiting" })
+    }
+  }, [])
+
+  useScreenCommand(handleScreenCommand)
   useVotingOpened(handleVotingOpened)
   useBattleWinner(handleBattleWinner)
   useBattleTie(handleBattleTie)

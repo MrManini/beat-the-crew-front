@@ -90,6 +90,14 @@ export async function getBracket(eventId: number, group: ContestantGroup): Promi
 }
 
 // Battles
+export async function getCurrentBattle(): Promise<Battle | null> {
+  const res = await fetch(`${API_BASE}/battles/current`, {
+    headers: { ...getAuthHeader() },
+  })
+  if (!res.ok) return null
+  return res.json()
+}
+
 export async function getActiveBattle(eventId: number): Promise<Battle | null> {
   const res = await fetch(`${API_BASE}/battles/active?eventId=${eventId}`)
   if (!res.ok) return null

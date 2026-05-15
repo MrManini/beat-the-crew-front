@@ -6,6 +6,7 @@ import { generateBracket, reshuffleBracket } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flag, RefreshCw, Shuffle } from "lucide-react"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog"
 
 interface BracketControlProps {
   eventId: number | null
@@ -74,15 +75,50 @@ function BattleRow({ battle, index, roundName, isActive, onSelect, onForfeit }: 
       >
       {yellowName}
       {canForfeit && (
-        <button
-        onClick={() => {
-          if (confirm(`¿${yellowName} se retira?`)) onForfeit(battle.id, 'yellow')
-        }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-100 transition-all duration-200 hover:scale-120"
-        title={`Retirar a ${yellowName}`}
-        >
-        <Flag className="w-4 h-4" />
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              className="
+                absolute right-2 top-1/2 -translate-y-1/2
+                opacity-30 hover:opacity-100
+                hover:scale-125
+                transition-all
+              "
+            >
+              <Flag className="w-3 h-3" />
+            </button>
+          </AlertDialogTrigger>
+
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                ¿Confirmar retiro?
+              </AlertDialogTitle>
+
+              <AlertDialogDescription>
+                {yellowName} perderá automáticamente esta batalla
+                y el oponente avanzará a la siguiente ronda.
+                Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                Cancelar
+              </AlertDialogCancel>
+
+              <AlertDialogAction
+                onClick={() =>
+                  onForfeit(battle.id, "yellow")
+                }
+                className="bg-btc-yellow text-btc-dark hover:bg-btc-yellow-light"
+              >
+                Confirmar retiro
+              </AlertDialogAction>
+
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
       </div>
 
@@ -101,15 +137,50 @@ function BattleRow({ battle, index, roundName, isActive, onSelect, onForfeit }: 
       >
       {purpleName}
       {canForfeit && (
-        <button
-        onClick={() => {
-          if (confirm(`¿${purpleName} se retira?`)) onForfeit(battle.id, 'purple')
-        }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 hover:opacity-100 transition-all duration-200 hover:scale-120"
-        title={`Retirar a ${purpleName}`}
-        >
-        <Flag className="w-4 h-4" />
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              className="
+                absolute right-2 top-1/2 -translate-y-1/2
+                opacity-30 hover:opacity-100
+                hover:scale-125
+                transition-all
+              "
+            >
+              <Flag className="w-3 h-3" />
+            </button>
+          </AlertDialogTrigger>
+
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                ¿Confirmar retiro?
+              </AlertDialogTitle>
+
+              <AlertDialogDescription>
+                {purpleName} perderá automáticamente esta batalla
+                y el oponente avanzará a la siguiente ronda.
+                Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                Cancelar
+              </AlertDialogCancel>
+
+              <AlertDialogAction
+                onClick={() =>
+                  onForfeit(battle.id, "purple")
+                }
+                className="bg-btc-purple text-foreground hover:bg-btc-purple-light"
+              >
+                Confirmar retiro
+              </AlertDialogAction>
+
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
       </div>
 

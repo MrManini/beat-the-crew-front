@@ -99,11 +99,11 @@ function ScreenApp() {
     setState((prev) => ({ ...prev, winnerData: payload }))
     switchMode("winner")
 
-/*     setTimeout(() => {
+    setTimeout(() => {
       loadData()
       switchMode("bracket")
       setState((prev) => ({ ...prev, winnerData: undefined }))
-    }, 8000) */
+    }, 10000)
   }, [loadData, switchMode])
 
   const handleBattleTie = useCallback((payload: { battleId: number }) => {

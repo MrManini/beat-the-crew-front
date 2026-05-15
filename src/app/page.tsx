@@ -11,8 +11,7 @@ import { VotedState } from "@/components/voter/voted-state"
 import { WinnerState } from "@/components/voter/winner-state"
 import { TieState } from "@/components/voter/tie-state"
 import { ForfeitState } from "@/components/voter/forfeit-state"
-
-const EVENT_ID = parseInt(process.env.NEXT_PUBLIC_EVENT_ID || "1")
+import { useSearchParams } from "next/navigation"
 
 function VoterApp() {
   const [appState, setAppState] = useState<AppState>({ status: "waiting" })
@@ -20,6 +19,8 @@ function VoterApp() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { isConnected } = useSocket()
+  const searchParams = useSearchParams()
+  const eventId = parseInt(searchParams.get('eventId') || '0')
 
   // Initialize user ID from localStorage
   useEffect(() => {
@@ -35,7 +36,7 @@ function VoterApp() {
   useEffect(() => {
     async function checkActiveBattle() {
       try {
-        const battle = await getActiveBattle(EVENT_ID)
+        const battle = await getActiveBattle(eventId)
         if (battle && battle.votingOpen) {
           // Check if user already voted in this battle
           const votedBattles = JSON.parse(localStorage.getItem("btc_voted_battles") || "{}")
@@ -50,11 +51,10 @@ function VoterApp() {
           }
         }
       } catch (err) {
-        console.log("[v0] No active battle found")
       }
     }
     checkActiveBattle()
-  }, [])
+  }, [eventId])
 
   // Socket event handlers
   const handleVotingOpened = useCallback((payload: { battleId: number; yellow: { id: number; name: string }; purple: { id: number; name: string } }) => {
@@ -62,12 +62,12 @@ function VoterApp() {
       id: payload.battleId,
       round: 0,
       position: 0,
-      eventId: EVENT_ID,
+      eventId: eventId,
       group: "CREW" as ContestantGroup,
       yellowContestantId: payload.yellow.id,
       purpleContestantId: payload.purple.id,
-      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
-      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
+      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: eventId },
+      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: eventId },
       winnerId: null,
       winner: null,
       votingOpen: true,
@@ -123,12 +123,12 @@ function VoterApp() {
       id: payload.battleId,
       round: 0,
       position: 0,
-      eventId: EVENT_ID,
+      eventId: eventId,
       group: "CREW" as ContestantGroup,
       yellowContestantId: payload.yellow.id,
       purpleContestantId: payload.purple.id,
-      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
-      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
+      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: eventId },
+      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: eventId },
       winnerId: null,
       winner: null,
       votingOpen: true,

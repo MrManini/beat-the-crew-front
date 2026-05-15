@@ -35,17 +35,17 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     })
 
     socketInstance.on("connect", () => {
-      console.log("[v0] Socket connected:", socketInstance.id)
+      console.log("Socket connected:", socketInstance.id)
       setIsConnected(true)
     })
 
     socketInstance.on("disconnect", () => {
-      console.log("[v0] Socket disconnected")
+      console.log("Socket disconnected")
       setIsConnected(false)
     })
 
     socketInstance.on("connect_error", (error) => {
-      console.log("[v0] Socket connection error:", error.message)
+      console.log("Socket connection error:", error.message)
     })
 
     setSocket(socketInstance)

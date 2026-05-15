@@ -9,8 +9,7 @@ import { LogoView } from "@/components/screen/logo-view"
 import { WinnerReveal } from "@/components/screen/winner-reveal"
 import { TieReveal } from "@/components/screen/tie-reveal"
 import { VotingTimer } from "@/components/screen/voting-timer"
-
-const EVENT_ID = parseInt(process.env.NEXT_PUBLIC_EVENT_ID || "1")
+import { useSearchParams } from "next/navigation"
 
 type ScreenMode = "logo" | "bracket" | "winner" | "tie" | "timer"
 
@@ -42,6 +41,8 @@ function ScreenApp() {
   const [prevMode, setPrevMode] = useState<ScreenMode | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
+  const searchParams = useSearchParams()
+  const eventId = parseInt(searchParams.get('eventId') || '0')
 
   const switchMode = useCallback((newMode: ScreenMode) => {
     if (newMode === currentMode || isTransitioning) return
@@ -60,21 +61,20 @@ function ScreenApp() {
   }, [currentMode, isTransitioning])
 
   // Load event and bracket data
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (id: number, group: ContestantGroup) => {
     try {
       const [event, battles] = await Promise.all([
-        getEvent(EVENT_ID),
-        getBracket(EVENT_ID, state.group),
+        getEvent(id),
+        getBracket(id, group),
       ])
       setState((prev) => ({ ...prev, event, battles }))
     } catch (err) {
-      console.log("[v0] Failed to load screen data:", err)
     }
-  }, [state.group])
+  }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (eventId) loadData(eventId, state.group)
+  }, [eventId, state.group, loadData])
 
   // Socket event handlers
   const handleVotingTick = useCallback((data: { battleId: number; secondsLeft: number }) => {
@@ -87,37 +87,31 @@ function ScreenApp() {
       currentYellow: data.yellow.name,
       currentPurple: data.purple.name,
     }))
-    console.log(data, state.currentYellow, state.currentPurple)
     setSecondsLeft(30)
     switchMode("timer")
-    loadData()
-  }, [loadData, switchMode])
+    loadData(eventId, state.group)
+  }, [loadData, switchMode, eventId, state.group])
 
   const handleBattleWinner = useCallback((payload: { battleId: number; winnerId: number; winnerName: string; yellowVotes: number; purpleVotes: number }) => {
     setSecondsLeft(null)
     setState((prev) => ({ ...prev, winnerData: payload }))
     switchMode("winner")
-
-  }, [loadData, switchMode])
+  }, [switchMode])
 
   const handleBattleTie = useCallback((payload: { battleId: number }) => {
     setSecondsLeft(null)
-    setState((prev) => ({ ...prev, mode: "tie" }))
     switchMode("tie")
-    setTimeout(() => {
-      setState((prev) => ({ ...prev, mode: "bracket" }))
-    }, 5000)
   }, [switchMode])
 
   const handleBattleRerun = useCallback(() => {
     setState((prev) => ({ ...prev, mode: "bracket" }))
     switchMode("bracket")
-    loadData()
-  }, [loadData, switchMode])
+    loadData(eventId, state.group)
+  }, [loadData, switchMode, eventId, state.group])
 
   const handleBattleForfeit = useCallback(() => {
-    loadData()
-  }, [loadData])
+    loadData(eventId, state.group)
+  }, [loadData, eventId, state.group])
 
   useVotingTick(handleVotingTick)
   useVotingOpened(handleVotingOpened)
@@ -142,12 +136,12 @@ function ScreenApp() {
     setIsTransitioning(true)
     setTimeout(() => {
       setState((prev) => ({ ...prev, group: group as ContestantGroup }))
-      loadData()
+      loadData(eventId, group as ContestantGroup)
     }, 300)
     setTimeout(() => {
       setIsTransitioning(false)
     }, 600)
-  }, [loadData])
+  }, [loadData, eventId])
 
   useScreenCommand(handleScreenCommand)
   useScreenGroupCommand(handleScreenGroup)

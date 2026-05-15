@@ -18,6 +18,7 @@ export function VotingControl({
   activeBattle,
   onCloseVoting,
   onAnnounceResult,
+  onRerun,
 }: VotingControlProps) {
   const yellowName = activeBattle?.yellowContestant?.name || "Amarillo"
   const purpleName = activeBattle?.purpleContestant?.name || "Morado"
@@ -77,6 +78,17 @@ export function VotingControl({
             {" vs "}
             <span className="text-btc-purple">{purpleName}</span>
           </div>
+        )}
+
+        {/* Rerun button (for ties) */}
+        {activeBattle && !isVotingOpen && !hasWinner && (
+          <Button
+            onClick={onRerun}
+            variant="outline"
+            className="w-full border-btc-purple text-btc-purple hover:bg-btc-purple hover:text-foreground"
+          >
+            Repetir Batalla (Empate)
+          </Button>
         )}
       </CardContent>
     </Card>

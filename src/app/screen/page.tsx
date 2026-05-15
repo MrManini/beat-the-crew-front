@@ -80,6 +80,7 @@ function ScreenApp() {
   }, [])
 
   const handleVotingOpened = useCallback((data: VotingOpenedPayload) => {
+    setSecondsLeft(null)
     setState((prev) => ({
       ...prev,
       currentYellow: data.yellow.name,
@@ -108,7 +109,8 @@ function ScreenApp() {
 
   const handleBattleForfeit = useCallback(() => {
     loadData(eventId, state.group)
-  }, [loadData, eventId, state.group])
+    switchMode("bracket")
+  }, [loadData, switchMode, eventId, state.group])
 
   useVotingTick(handleVotingTick)
   useVotingOpened(handleVotingOpened)

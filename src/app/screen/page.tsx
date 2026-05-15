@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { SocketProvider, useVotingOpened, useBattleWinner, useBattleTie, useBattleRerun, useBattleForfeit, useSocket, useScreenCommand, useScreenGroupCommand, useVotingTick } from "@/lib/socket-context"
-import { getBracket, getActiveBattle, getEvent } from "@/lib/api"
+import { SocketProvider, useVotingOpened, useBattleWinner, useBattleTie, useBattleRerun, useBattleForfeit, useSocket, useScreenCommand, useScreenGroupCommand, useVotingTick, emitScreenCommand } from "@/lib/socket-context"
+import { getBracket, getEvent } from "@/lib/api"
 import { ContestantGroup, VotingOpenedPayload, type Battle, type Event } from "@/lib/types"
 import { BracketView } from "@/components/screen/bracket-view"
 import { LogoView } from "@/components/screen/logo-view"
@@ -95,15 +95,9 @@ function ScreenApp() {
 
   const handleBattleWinner = useCallback((payload: { battleId: number; winnerId: number; winnerName: string; yellowVotes: number; purpleVotes: number }) => {
     setSecondsLeft(null)
-    const isYellowWinner = payload.yellowVotes > payload.purpleVotes
     setState((prev) => ({ ...prev, winnerData: payload }))
     switchMode("winner")
 
-    setTimeout(() => {
-      loadData()
-      switchMode("bracket")
-      setState((prev) => ({ ...prev, winnerData: undefined }))
-    }, 10000)
   }, [loadData, switchMode])
 
   const handleBattleTie = useCallback((payload: { battleId: number }) => {

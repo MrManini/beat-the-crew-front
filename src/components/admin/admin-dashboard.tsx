@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useVotesUpdated } from "@/lib/socket-context"
 import {
   createEvent,
   getEvent,
   getBracket,
   getVoteTally,
-  addContestants,
   openVoting,
   closeVoting,
   announceResult,
@@ -22,7 +20,7 @@ import { BracketControl } from "./bracket-control"
 import { EventSetup } from "./event-setup"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
-import { useVotingTick } from "@/lib/socket-context"
+import { useVotingTick, useVotesUpdated } from "@/lib/socket-context"
 
 interface AdminDashboardProps {
   onLogout: () => void

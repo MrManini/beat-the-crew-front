@@ -84,8 +84,8 @@ function ScreenApp() {
   const handleVotingOpened = useCallback((data: VotingOpenedPayload) => {
     setState((prev) => ({
       ...prev,
-      currentYellow: data.yellow,
-      currentPurple: data.purple,
+      currentYellow: data.yellow.name,
+      currentPurple: data.purple.name,
     }))
     console.log(data, state.currentYellow, state.currentPurple)
     setSecondsLeft(30)
@@ -95,6 +95,7 @@ function ScreenApp() {
 
   const handleBattleWinner = useCallback((payload: { battleId: number; winnerId: number; winnerName: string; yellowVotes: number; purpleVotes: number }) => {
     setSecondsLeft(null)
+    const isYellowWinner = payload.yellowVotes > payload.purpleVotes
     setState((prev) => ({ ...prev, winnerData: payload }))
     switchMode("winner")
 

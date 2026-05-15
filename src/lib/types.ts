@@ -57,8 +57,8 @@ export interface VoteTally {
 // WebSocket Event Payloads
 export interface VotingOpenedPayload {
   battleId: number
-  yellow: string
-  purple: string
+  yellow: { id: number; name: string }
+  purple: { id: number; name: string }
 }
 
 export interface BattleWinnerPayload {

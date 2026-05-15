@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { SocketProvider, useVotingOpened, useBattleWinner, useBattleTie, useBattleRerun, useBattleForfeit, useSocket } from "@/lib/socket-context"
 import { getActiveBattle, castVote } from "@/lib/api"
-import { VoteChoice, type Battle, type AppState } from "@/lib/types"
+import { VoteChoice, type Battle, type AppState, ContestantGroup } from "@/lib/types"
 import { WaitingState } from "@/components/voter/waiting-state"
 import { VotingState } from "@/components/voter/voting-state"
 import { VotedState } from "@/components/voter/voted-state"
@@ -63,14 +63,15 @@ function VoterApp() {
       round: 0,
       position: 0,
       eventId: EVENT_ID,
-      group: "CREW" as const,
+      group: "CREW" as ContestantGroup,
       yellowContestantId: payload.yellow.id,
       purpleContestantId: payload.purple.id,
-      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as const, eventId: EVENT_ID },
-      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as const, eventId: EVENT_ID },
+      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
+      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
       winnerId: null,
       winner: null,
       votingOpen: true,
+      active: true,
     }
     
     // Check if user already voted in this battle
@@ -123,14 +124,15 @@ function VoterApp() {
       round: 0,
       position: 0,
       eventId: EVENT_ID,
-      group: "CREW" as const,
+      group: "CREW" as ContestantGroup,
       yellowContestantId: payload.yellow.id,
       purpleContestantId: payload.purple.id,
-      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as const, eventId: EVENT_ID },
-      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as const, eventId: EVENT_ID },
+      yellowContestant: { id: payload.yellow.id, name: payload.yellow.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
+      purpleContestant: { id: payload.purple.id, name: payload.purple.name, group: "CREW" as ContestantGroup, eventId: EVENT_ID },
       winnerId: null,
       winner: null,
       votingOpen: true,
+      active: true,
     }
     setAppState({ status: "voting", battle })
   }, [])

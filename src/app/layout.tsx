@@ -9,7 +9,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono
 export const metadata: Metadata = {
   title: 'Beat The Crew - Dance Battle UNC',
   description: 'Live voting system for Beat The Crew Dance Battle at UNC. Vote for your favorite dancers in real-time!',
-  generator: 'v0.app',
   icons: {
     icon: '/images/star.ico',
     apple: '/images/star.ico',

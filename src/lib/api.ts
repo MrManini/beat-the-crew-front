@@ -31,10 +31,14 @@ export async function createEvent(name: string): Promise<Event> {
   return res.json()
 }
 
+export async function getEvents(): Promise<(Event & { _count: { contestants: number; battles: number } })[]> {
+  const res = await fetch(`${API_BASE}/events`)
+  if (!res.ok) throw new Error("Failed to fetch events")
+  return res.json()
+}
+
 export async function getEvent(id: number): Promise<Event> {
-  const res = await fetch(`${API_BASE}/events/${id}`, {
-    headers: { ...getAuthHeader() },
-  })
+  const res = await fetch(`${API_BASE}/events/${id}`)
   if (!res.ok) throw new Error("Event not found")
   return res.json()
 }

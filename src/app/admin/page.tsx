@@ -24,6 +24,7 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token")
+    localStorage.removeItem("btc_event_id")
     setIsAuthenticated(false)
   }
 

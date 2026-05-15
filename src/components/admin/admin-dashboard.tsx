@@ -19,7 +19,7 @@ import { ScreenControl } from "./screen-control"
 import { BracketControl } from "./bracket-control"
 import { EventSetup } from "./event-setup"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import { LogOut, FolderOpen } from "lucide-react"
 import { useVotingTick, useVotesUpdated } from "@/lib/socket-context"
 
 interface AdminDashboardProps {
@@ -39,6 +39,15 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [tally, setTally] = useState<VoteTally>({ yellowVotes: 0, purpleVotes: 0, votingOpen: false })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Switch current event
+  const handleChangeEvent = () => {
+    localStorage.removeItem('btc_event_id')
+    setEventId(null)
+    setEvent(null)
+    setBattles([])
+    setActiveBattle(null)
+  }
 
   // Load event data
   const loadEventData = useCallback(async (id: number) => {
@@ -204,15 +213,26 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             </h1>
             {event && <p className="text-sm text-muted-foreground mt-1">{event.name}</p>}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onLogout}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Salir
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleChangeEvent}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Cambiar Evento
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onLogout}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Salir
+            </Button>
+          </div>
         </div>
 
         {/* Error display */}
